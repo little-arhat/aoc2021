@@ -22,6 +22,34 @@
 (defn run-day-1-2 []
   (day-1-2 (inp-lines 1)))
 
+(def commands
+  {"forward" (fn [arg {:keys [h d]}]
+               {:h (+ h arg) :d d})
+   "down" (fn [arg {:keys [h d]}]
+            {:h h :d (+ d arg)})
+   "up" (fn [arg {:keys [h d]}]
+          {:h h :d (- d arg)})})
+(defn day-2-common [data cmd-set]
+  (as-> (map words data) i
+    (reduce (fn [acc [cmd arg]]
+              ((cmd-set cmd) (parse-int arg) acc))
+      {:h 0 :d 0 :a 0} i)
+    (* (:h i) (:d i))))
+(defn run-day-2-1 []
+  (day-2-common (inp-lines 2) commands))
+
+(def commands-2
+  {"forward" (fn [arg {:keys [h d a]}]
+               {:h (+ h arg) :a a :d (+ d (* a arg))})
+   "down" (fn [arg {:keys [h d a]}]
+            {:h h :d d :a (+ a arg)})
+   "up" (fn [arg {:keys [h d a]}]
+          {:h h :d d :a (- a arg)})
+   })
+(defn run-day-2-2 []
+  (day-2-common (inp-lines 2) commands-2))
+
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
