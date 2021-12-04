@@ -49,6 +49,21 @@
 (defn run-day-2-2 []
   (day-2-common (inp-lines 2) commands-2))
 
+(defn day-3-1 [data]
+  (as-> (apply mapv vector data) i
+    (map frequencies i)
+    (reduce (fn [{:keys [gamma epsilon]} digit]
+              {
+               :gamma (conj gamma (key (apply max-key val digit)))
+               :epsilon (conj epsilon (key (apply min-key val digit)))
+               })
+      {:gamma [] :epsilon []}
+      i)
+    (*
+      (parse-int (apply str (:gamma i)) 2)
+      (parse-int (apply str (:epsilon i)) 2))))
+(defn run-day-3-1 []
+  (day-3-1 (inp-lines 3)))
 
 (defn -main
   "I don't do a whole lot ... yet."
