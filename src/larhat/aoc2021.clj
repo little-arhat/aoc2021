@@ -60,10 +60,34 @@
       {:gamma [] :epsilon []}
       i)
     (*
-      (parse-int (apply str (:gamma i)) 2)
-      (parse-int (apply str (:epsilon i)) 2))))
+      (parse-bin-int (apply str (:gamma i)))
+      (parse-bin-int (apply str (:epsilon i))))))
 (defn run-day-3-1 []
   (day-3-1 (inp-lines 3)))
+
+(defn oxygen-selector [zero one]
+  (if (= (count zero) (count one))
+    one
+    (max-key count zero one)))
+(defn co2-selector [zero one]
+  (if (= (count zero) (count one))
+    zero
+    (min-key count zero one)))
+(defn find-sensors [numbers selector index]
+  (let [split-by-bit (group-by #(get % index) numbers)
+        zero-bit (split-by-bit \0)
+        one-bit (split-by-bit \1)
+        selected (selector zero-bit one-bit)]
+    (if (= 1 (count selected))
+      (first selected)
+                                        ; else
+      (recur selected selector (inc index)))))
+(defn day-3-2 [data]
+  (let [oxygen (find-sensors data oxygen-selector 0)
+        co2 (find-sensors data co2-selector 0)]
+    (* (parse-bin-int oxygen) (parse-bin-int co2))))
+(defn run-day-3-2 []
+  (day-3-2 (inp-lines 3)))
 
 (defn -main
   "I don't do a whole lot ... yet."

@@ -31,6 +31,8 @@
   ([n]  (Integer. n))
   ([n x] (Integer/parseInt n x)))
 
+(defn parse-bin-int [n] (parse-int n 2))
+
 (defn parse-long [n]
   (Long. n))
 
