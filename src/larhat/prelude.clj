@@ -12,6 +12,9 @@
 (defn words [s]
   (str/split s #"\s"))
 
+(defn comma-sequence [s]
+  (str/split s #"\,"))
+
 (defn lines [s]
   (str/split-lines s))
 
