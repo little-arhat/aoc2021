@@ -21,3 +21,7 @@
 (t day4
   (is (= 10374 (run-day-4-1)))
   (is (= 24742 (run-day-4-2))))
+
+(t day5
+  (is (= 6113 (run-day-5-1)))
+  (is (= 20373 (run-day-5-2))))

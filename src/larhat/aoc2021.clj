@@ -153,6 +153,80 @@
 (defn run-day-4-2 []
   (run-day-4-helper day-4-2 (inp-phrases 4)))
 
+(defn mapv-split [f pat inp]
+  (mapv f (str/split inp pat)))
+
+(defn arrows [ls]
+  (map
+    (fn [l]
+      (mapv-split
+        (fn [p]
+          (mapv-split parse-int #"," p))
+        #" -> "
+        l))
+    ls))
+
+(defn vert-or-hor [[[x1 y1] [x2 y2]]]
+  (or
+    (= x1 x2)
+    (= y1 y2)))
+
+(defn segments [a b]
+  (if (< a b)
+    (range a (inc b))
+    (range a (dec b) -1)))
+
+(defn zip [& xs]
+  (apply map vector xs))
+
+(defn mark-line [sea-bed coords]
+  (reduce (fn [sb [x y]]
+            (update-in sb [[x y]] (fnil inc 0)))
+    sea-bed coords))
+
+(defn mark-sea-bed-hv [sea-bed [[x1 y1] [x2 y2]]]
+  (if (= x1 x2)
+    (mark-line sea-bed
+      (zip (repeat x1) (segments y1 y2)))
+    (mark-line sea-bed
+      (zip (segments x1 x2) (repeat y1)))))
+
+(defn day-5-1 [data]
+  (as-> (arrows data) i
+    (filter vert-or-hor i)
+    (reduce mark-sea-bed-hv
+      {}
+      i)
+    (vals i)
+    (filter #(< 1 %) i)
+    (count i)))
+(defn run-day-5-1 []
+  (day-5-1 (inp-lines 5)))
+
+(defn mark-sea-bed [sea-bed [[x1 y1] [x2 y2]]]
+  (cond
+    (= x1 x2)
+    (mark-line sea-bed
+      (zip (repeat x1) (segments y1 y2)))
+    (= y1 y2)
+    (mark-line sea-bed
+      (zip (segments x1 x2) (repeat y1)))
+                                        ; else: diag
+    :else
+    (mark-line sea-bed
+      (zip (segments x1 x2) (segments y1 y2)))))
+
+(defn day-5-2 [data]
+  (as-> (arrows data) i
+    (reduce mark-sea-bed
+      {}
+      i)
+    (vals i)
+    (filter #(< 1 %) i)
+    (count i)))
+(defn run-day-5-2 []
+  (day-5-2 (inp-lines 5)))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
