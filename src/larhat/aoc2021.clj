@@ -227,6 +227,33 @@
 (defn run-day-5-2 []
   (day-5-2 (inp-lines 5)))
 
+(defn plus-n [n]
+  (fnil #(+ n %) 0))
+
+(defn one-day-of-fish [fish]
+  (reduce (fn [acc [fish-timer fish-count]]
+            (if (zero? fish-timer)
+              (-> acc
+                (update-in [8] (plus-n fish-count))
+                (update-in [6] (plus-n fish-count)))
+              ; else
+              (update-in acc [(dec fish-timer)] (plus-n fish-count))))
+    {}
+    fish))
+
+(defn day-6-1 [days-of-life data]
+  (->> (map parse-int data)
+    frequencies
+    (iterate one-day-of-fish)
+    (take (inc days-of-life))
+    last
+    vals
+    (reduce +)))
+(defn run-day-6-1 []
+  (day-6-1 80 (comma-sequence (input 6))))
+(defn run-day-6-2 []
+  (day-6-1 256 (comma-sequence (input 6))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
