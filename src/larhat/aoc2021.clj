@@ -275,8 +275,8 @@
   (let [poss (map parse-int data)
         sm (reduce + poss)
         cnt (count poss)
-        avg (-> (/ sm cnt) double Math/round int)
-        costs (map #(->> (- % (dec avg)) Math/abs inc range (reduce +)) poss)]
+        avg (-> (/ sm cnt) int)
+        costs (map #(->> (- % avg) Math/abs inc range (reduce +)) poss)]
     (reduce + costs)))
 (defn run-day-7-2 []
   (day-7-2 (comma-sequence (input 7))))
