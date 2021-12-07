@@ -254,6 +254,33 @@
 (defn run-day-6-2 []
   (day-6-1 256 (comma-sequence (input 6))))
 
+;; rosetta
+(defn median [ns]
+  (let [ns (sort ns)
+        cnt (count ns)
+        mid (bit-shift-right cnt 1)]
+    (if (odd? cnt)
+      (nth ns mid)
+      (/ (+ (nth ns mid) (nth ns (dec mid))) 2))))
+
+(defn day-7-1 [data]
+  (let [poss (map parse-int data)
+        md (median poss)
+        costs (map #(Math/abs (- % md)) poss)]
+    (reduce + costs)))
+(defn run-day-7-1 []
+  (day-7-1 (comma-sequence (input 7))))
+
+(defn day-7-2 [data]
+  (let [poss (map parse-int data)
+        sm (reduce + poss)
+        cnt (count poss)
+        avg (-> (/ sm cnt) double Math/round int)
+        costs (map #(->> (- % (dec avg)) Math/abs inc range (reduce +)) poss)]
+    (reduce + costs)))
+(defn run-day-7-2 []
+  (day-7-2 (comma-sequence (input 7))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]

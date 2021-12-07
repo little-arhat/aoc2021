@@ -13,7 +13,9 @@
   (str/split s #"\s"))
 
 (defn comma-sequence [s]
-  (str/split s #"\,"))
+  (-> s
+    str/trim
+    (str/split #"\,")))
 
 (defn lines [s]
   (str/split-lines s))
