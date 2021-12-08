@@ -310,30 +310,22 @@
         sresults (map str-sort results)
         codes (into #{} (concat sinputs sresults))
         by-length (group-by count codes)
-        dig-1 (-> by-length (get 2) first)
-        dig-7 (-> by-length (get 3) first)
-        dig-4 (-> by-length (get 4) first)
-        dig-8 (-> by-length (get 7) first)
+        [d1] (by-length 2)
+        [d7] (by-length 3)
+        [d4] (by-length 4)
+        [d8] (by-length 7)
         md-5 (by-length 5)
-        dig-3 (first (filter #(seg-includes? % dig-1) md-5))
-        md-5' (remove #(= dig-3 %) md-5)
-        dig-5 (first (filter #(= 3 (count (seg-intersection % dig-4))) md-5'))
-        dig-2 (first (remove #(= dig-5 %) md-5'))
+        [d3] (filter #(seg-includes? % d1) md-5)
+        md-5' (remove #{d3} md-5)
+        [d5] (filter #(= 3 (count (seg-intersection % d4))) md-5')
+        [d2] (remove #{d5} md-5')
         md-6 (by-length 6)
-        dig-6 (first (remove #(seg-includes? % dig-1) md-6))
-        md-6' (remove #(= dig-6 %) md-6)
-        dig-9 (first (filter #(seg-includes? % dig-4) md-6'))
-        dig-0 (first (remove #(= dig-9 %) md-6'))
-        mp {dig-0 0
-            dig-1 1
-            dig-2 2
-            dig-3 3
-            dig-4 4
-            dig-5 5
-            dig-6 6
-            dig-7 7
-            dig-8 8
-            dig-9 9}
+        [d6] (remove #(seg-includes? % d1) md-6)
+        md-6' (remove #{d6} md-6)
+        [d9] (filter #(seg-includes? % d4) md-6')
+        [d0] (remove #{d9} md-6')
+        mp (clojure.set/map-invert (into {} (map-indexed vector)
+                                     [d0 d1 d2 d3 d4 d5 d6 d7 d8 d9]))
         iresults (map mp sresults)
         sres (apply str iresults)]
     (parse-int sres)))
