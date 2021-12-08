@@ -281,6 +281,73 @@
 (defn run-day-7-2 []
   (day-7-2 (comma-sequence (input 7))))
 
+(def l-1478 #{2 3 4 7})
+(defn is-1478 [wd]
+  (-> wd count l-1478 some?))
+
+(defn str-sort [s]
+  (apply str (sort s)))
+
+(defn day-8-1 [data]
+  (as-> (str/replace data " |\n" " | ") codes
+    (lines codes)
+    (map #(str/split % #" \| ") codes)
+    (map last codes)
+    (map words codes)
+    (map #(filter is-1478 %) codes)
+    (map count codes)
+    (reduce + codes)))
+(defn run-day-8-1 []
+  (day-8-1 (input 8)))
+
+(defn seg-includes? [seg other-seg]
+  (clojure.set/superset? (set seg) (set other-seg)))
+(defn seg-intersection [seg other-seg]
+  (clojure.set/intersection (set seg) (set other-seg)))
+
+(defn decypher [[inputs results]]
+  (let [sinputs (map str-sort inputs)
+        sresults (map str-sort results)
+        codes (into #{} (concat sinputs sresults))
+        by-length (group-by count codes)
+        dig-1 (-> by-length (get 2) first)
+        dig-7 (-> by-length (get 3) first)
+        dig-4 (-> by-length (get 4) first)
+        dig-8 (-> by-length (get 7) first)
+        md-5 (by-length 5)
+        dig-3 (first (filter #(seg-includes? % dig-1) md-5))
+        md-5' (remove #(= dig-3 %) md-5)
+        dig-5 (first (filter #(= 3 (count (seg-intersection % dig-4))) md-5'))
+        dig-2 (first (remove #(= dig-5 %) md-5'))
+        md-6 (by-length 6)
+        dig-6 (first (remove #(seg-includes? % dig-1) md-6))
+        md-6' (remove #(= dig-6 %) md-6)
+        dig-9 (first (filter #(seg-includes? % dig-4) md-6'))
+        dig-0 (first (remove #(= dig-9 %) md-6'))
+        mp {dig-0 0
+            dig-1 1
+            dig-2 2
+            dig-3 3
+            dig-4 4
+            dig-5 5
+            dig-6 6
+            dig-7 7
+            dig-8 8
+            dig-9 9}
+        iresults (map mp sresults)
+        sres (apply str iresults)]
+    (parse-int sres)))
+
+(defn day-8-2 [data]
+  (as-> (str/replace data " |\n" " | ") codes
+    (lines codes)
+    (map #(str/split % #" \| ") codes)
+    (map #(map words %) codes)
+    (map decypher codes)
+    (reduce + codes)))
+(defn run-day-8-2 []
+  (day-8-2 (input 8)))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
