@@ -341,6 +341,75 @@
 (defn run-day-8-2 []
   (day-8-2 (input 8)))
 
+(defn grid-get [grid]
+  (fn [[x y]]
+    (-> grid (get y) (get x))))
+
+(defn neighbours [grid width height x y]
+  (let [coords (set [[x (bound 0 (dec height) (dec y))]
+                     [x (bound 0 (dec height) (inc y))]
+                     [(bound 0 (dec width) (dec x)) y]
+                     [(bound 0 (dec width) (inc x)) y]])]
+    (remove #{[x y]} coords)))
+
+(defn adjacent [grid width height x y]
+  (->> (neighbours grid width height x y)
+    (map (grid-get grid))))
+
+(defn low-points [grid]
+  (apply concat
+    (keep-indexed
+      (fn [y row]
+        (let [low-in-row
+              (keep-indexed
+                (fn [x el]
+                  (when (< el (apply min (adjacent grid (count row) (count grid) x y)))
+                    [[x y] el]))
+                row)]
+          (when (not (empty? low-in-row))
+            low-in-row)))
+      grid)))
+
+(defn day-9-1 [data]
+  (as-> (mapv #(mapv parse-int %) data) xx
+    (low-points xx)
+    (map last xx)
+    (map inc xx)
+    (reduce + xx)))
+(defn run-day-9-1 []
+  (day-9-1 (inp-lines 9)))
+
+(defn basin-at-low-point* [grid width height [x y]]
+  (loop [to-scan #{[x y]}
+         found #{}]
+    (if-some [[x' y'] (first to-scan)]
+      (let [nbs (neighbours grid width height x' y')
+            gg (grid-get grid)
+            non-terminating (remove #(= 9 (gg %)) nbs)
+            not-visited (remove found non-terminating)
+            to-scan' (rest to-scan)
+            to-scan'' (reduce conj to-scan' not-visited)
+            found' (conj found [x' y'])]
+        (recur to-scan'' found'))
+      ; else
+      found)))
+
+(defn basin-at-low-point [grid point]
+  (basin-at-low-point* grid (count (first grid)) (count grid) point))
+
+(defn day-9-2 [data]
+  (let [grid (mapv #(mapv parse-int %) data)]
+    (->> (low-points grid)
+      (map first)
+      (map #(basin-at-low-point grid %))
+      (sort-by count)
+      (reverse)
+      (take 3)
+      (map count)
+      (reduce *))))
+(defn run-day-9-2 []
+  (day-9-2 (inp-lines 9)))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]

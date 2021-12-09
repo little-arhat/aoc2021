@@ -37,3 +37,7 @@
 (t day8
   (is (= 452 (run-day-8-1)))
   (is (= 1096964 (run-day-8-2))))
+
+(t day9
+  (is (= 585 (run-day-9-1)))
+  (is (= 827904 (run-day-9-2))))

@@ -33,7 +33,7 @@
   (-> (input n) phrases))
 
 (defn parse-int
-  ([n]  (Integer. n))
+  ([n]  (Integer. (str n)))
   ([n x] (Integer/parseInt n x)))
 
 (defn parse-bin-int [n] (parse-int n 2))
