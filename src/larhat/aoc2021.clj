@@ -308,8 +308,9 @@
 (defn decypher [[inputs results]]
   (let [sinputs (map str-sort inputs)
         sresults (map str-sort results)
-        codes (into #{} (concat sinputs sresults))
-        by-length (group-by count codes)
+        by-length (->> (concat sinputs sresults)
+                    set
+                    (group-by count))
         [d1] (by-length 2)
         [d7] (by-length 3)
         [d4] (by-length 4)
