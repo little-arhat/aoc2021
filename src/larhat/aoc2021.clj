@@ -344,7 +344,7 @@
 
 (defn grid-get [grid]
   (fn [[x y]]
-    (-> grid (get y) (get x))))
+    (get-in grid [y x])))
 
 (defn neighbours [grid width height x y]
   (let [coords (set [[x (bound 0 (dec height) (dec y))]
@@ -371,15 +371,13 @@
             low-in-row)))
       grid)))
 
-(defn day-9-1 [data]
-  (let [grid (mapv #(mapv parse-int %) data)
-        lp (low-points grid)]
-    (transduce (comp
-                 (map last)
-                 (map inc))
-      + lp)))
+(defn day-9-1 [grid]
+  (transduce (comp
+               (map last)
+               (map inc))
+    + (low-points grid)))
 (defn run-day-9-1 []
-  (day-9-1 (inp-lines 9)))
+  (day-9-1 (inp-num-grid 9)))
 
 (defn basin-at-low-point* [grid width height [x y]]
   (loop [to-scan #{[x y]}
@@ -399,18 +397,17 @@
 (defn basin-at-low-point [grid point]
   (basin-at-low-point* grid (count (first grid)) (count grid) point))
 
-(defn day-9-2 [data]
-  (let [grid (mapv #(mapv parse-int %) data)]
-    (->> (low-points grid)
+(defn day-9-2 [grid]
+  (->> (low-points grid)
       (map first)
       (map #(basin-at-low-point grid %))
       (sort-by count)
       (reverse)
       (take 3)
       (map count)
-      (reduce *))))
+      (reduce *)))
 (defn run-day-9-2 []
-  (day-9-2 (inp-lines 9)))
+  (day-9-2 (inp-num-grid 9)))
 
 (def char-pairs {\< \>
                  \[ \]
