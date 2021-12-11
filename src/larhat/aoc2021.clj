@@ -410,6 +410,90 @@
 (defn run-day-9-2 []
   (day-9-2 (inp-lines 9)))
 
+(def char-pairs {\< \>
+                 \[ \]
+                 \{ \}
+                 \( \)})
+(def open-char? (set (keys char-pairs)))
+(def close-char? (set (vals char-pairs)))
+(defn valid-pair? [op cl]
+  (= (char-pairs op) cl))
+(def invalid-score-table
+  {\) 3
+   \] 57
+   \} 1197
+   \> 25137})
+
+(defn invalid-line? [rr]
+  (not= -1 (:pos rr)))
+
+(defn score-invalid-line [rr]
+  (-> rr :cl invalid-score-table))
+
+(defn scan-line [l]
+  (loop [remaining l
+         opened (list )
+         pos 0]
+    (let [ch (first remaining)
+          remaining' (rest remaining)]
+      (cond
+        (nil? ch) {:opened opened
+                   :pos -1
+                   :op nil
+                   :cl nil} ;; no-error, maybe incomplete
+        (open-char? ch) (recur remaining' (conj opened ch) (inc pos))
+        (close-char? ch) (if (valid-pair? (first opened) ch)
+                           (recur remaining' (rest opened) (inc pos))
+                           {:opened opened
+                            :pos    pos
+                            :op     (first opened)
+                            :cl     ch})))))
+
+(defn day-10-1 [data]
+  (let [xf
+        (comp
+          (map scan-line )
+          (filter invalid-line?)
+          (map score-invalid-line)
+          )]
+    (transduce xf + data)))
+(defn run-day-10-1 []
+  (day-10-1 (inp-lines 10)))
+
+(defn autocomplete [rr]
+  (->> rr
+    :opened
+    (map char-pairs)))
+
+(def incomplete-score-table
+  {\) 1
+   \] 2
+   \} 3
+   \> 4})
+(defn score-incomplete [extra-chars]
+  (reduce
+    (fn [acc char]
+      (+ (incomplete-score-table char) (* 5 acc)))
+    0
+    extra-chars))
+
+(defn middle [scores]
+  (let [c (count scores)]
+    (nth scores (/ c 2))))
+
+(defn day-10-2 [data]
+  (let [xf (comp
+             (map scan-line)
+             (remove invalid-line?)
+             (map autocomplete)
+             (map score-incomplete))]
+    (->> data
+      (sequence xf)
+      sort
+      middle)))
+(defn run-day-10-2 []
+  (day-10-2 (inp-lines 10)))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
