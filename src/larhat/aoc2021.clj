@@ -349,16 +349,18 @@
   ([grid [x y]]
    (get-in grid [y x])))
 
-(defn neighbours [grid width height x y]
-  (let [coords (set [[x (bound 0 (dec height) (dec y))]
-                     [x (bound 0 (dec height) (inc y))]
-                     [(bound 0 (dec width) (dec x)) y]
-                     [(bound 0 (dec width) (inc x)) y]])]
-    (remove #{[x y]} coords)))
+(def axis4 #{[-1 0] [1 0] [0 1] [0 -1]})
+(def axis8 #{[-1 0] [1 0] [0 1] [0 -1]
+             [-1 -1 [-1 1] [1 -1] [1 1]]})
+(defn neighbours [indices point]
+  (mapv #(mapv + point %) indices))
+(def neighbours4 (partial neighbours axis4))
+(def neighbours8 (partial neighbours axis8))
 
-(defn adjacent [grid width height x y]
-  (->> (neighbours grid width height x y)
-    (map (grid-get grid))))
+(defn adjacent4 [grid point]
+  (->> (neighbours4 point)
+    (map (grid-get grid))
+    (remove nil?)))
 
 (defn grid-select [pred mp grid]
   (apply concat
@@ -373,8 +375,8 @@
 
 (defn low-points [mp grid]
   (grid-select
-    (fn [[x y] el]
-      (< el (apply min (adjacent grid (count (first grid)) (count grid) x y))))
+    (fn [point el]
+      (< el (apply min (adjacent4 grid point))))
     mp
     grid))
 
@@ -388,14 +390,14 @@
 (defn basin-at-low-point* [grid width height [x y]]
   (loop [to-scan #{[x y]}
          found #{}]
-    (if-some [[x' y'] (first to-scan)]
-      (let [nbs (neighbours grid width height x' y')
+    (if-some [point (first to-scan)]
+      (let [nbs (neighbours4 point)
             gg (grid-get grid)
-            non-terminating (remove #(= 9 (gg %)) nbs)
+            non-terminating (remove #(or (nil? (gg %)) (= 9 (gg %))) nbs)
             not-visited (remove found non-terminating)
             to-scan' (rest to-scan)
             to-scan'' (reduce conj to-scan' not-visited)
-            found' (conj found [x' y'])]
+            found' (conj found point)]
         (recur to-scan'' found'))
       ; else
       found)))
