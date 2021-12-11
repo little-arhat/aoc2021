@@ -96,8 +96,7 @@
     (map #(remove str/blank? (words %)) b)
     (num-grid b)))
 
-(defn map-grid [f grid]
-  (mapv #(mapv f %) grid))
+
 (defn mark [board number]
   (map-grid (fn [cell]
                (if (= number cell) nil cell)) board))
@@ -342,12 +341,6 @@
 (defn run-day-8-2 []
   (day-8-2 (input 8)))
 
-(defn grid-get
-  ([grid]
-   (fn [[x y]]
-     (get-in grid [y x])))
-  ([grid [x y]]
-   (get-in grid [y x])))
 
 (def axis4 #{[-1 0] [1 0] [0 1] [0 -1]})
 (def axis8 #{[-1 0] [1 0] [0 1] [0 -1]
@@ -361,17 +354,6 @@
   (->> (neighbours4 point)
     (map (grid-get grid))
     (remove nil?)))
-
-(defn grid-select [pred mp grid]
-  (apply concat
-    (keep-indexed
-      (fn [y row]
-        (not-empty (keep-indexed
-                     (fn [x el]
-                       (when (pred [x y] el)
-                         (mp [[x y] el])))
-                     row)))
-      grid)))
 
 (defn low-points [mp grid]
   (grid-select

@@ -51,3 +51,24 @@
 
 (defn inp-num-grid [n]
   (num-grid (input n)))
+
+(defn map-grid [f grid]
+  (mapv #(mapv f %) grid))
+
+(defn grid-get
+  ([grid]
+   (fn [[x y]]
+     (get-in grid [y x])))
+  ([grid [x y]]
+   (get-in grid [y x])))
+
+(defn grid-select [pred mp grid]
+  (apply concat
+    (keep-indexed
+      (fn [y row]
+        (not-empty (keep-indexed
+                     (fn [x el]
+                       (when (pred [x y] el)
+                         (mp [[x y] el])))
+                     row)))
+      grid)))
