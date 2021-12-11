@@ -94,12 +94,12 @@
 (defn to-board [long-line]
   (as-> (lines long-line) b
     (map #(remove str/blank? (words %)) b)
-    (mapv #(mapv parse-int %) b)))
+    (num-grid b)))
 
-(defn map-board [f board]
-  (mapv #(mapv f %) board))
+(defn map-grid [f grid]
+  (mapv #(mapv f %) grid))
 (defn mark [board number]
-  (map-board (fn [cell]
+  (map-grid (fn [cell]
                (if (= number cell) nil cell)) board))
 
 (defn only-nils? [xs]
@@ -342,9 +342,12 @@
 (defn run-day-8-2 []
   (day-8-2 (input 8)))
 
-(defn grid-get [grid]
-  (fn [[x y]]
-    (get-in grid [y x])))
+(defn grid-get
+  ([grid]
+   (fn [[x y]]
+     (get-in grid [y x])))
+  ([grid [x y]]
+   (get-in grid [y x])))
 
 (defn neighbours [grid width height x y]
   (let [coords (set [[x (bound 0 (dec height) (dec y))]
@@ -357,25 +360,28 @@
   (->> (neighbours grid width height x y)
     (map (grid-get grid))))
 
-(defn low-points [grid]
+(defn grid-select [pred mp grid]
   (apply concat
     (keep-indexed
       (fn [y row]
-        (let [low-in-row
-              (keep-indexed
-                (fn [x el]
-                  (when (< el (apply min (adjacent grid (count row) (count grid) x y)))
-                    [[x y] el]))
-                row)]
-          (when (not (empty? low-in-row))
-            low-in-row)))
+        (not-empty (keep-indexed
+                     (fn [x el]
+                       (when (pred [x y] el)
+                         (mp [[x y] el])))
+                     row)))
       grid)))
 
+(defn low-points [mp grid]
+  (grid-select
+    (fn [[x y] el]
+      (< el (apply min (adjacent grid (count (first grid)) (count grid) x y))))
+    mp
+    grid))
+
 (defn day-9-1 [grid]
-  (transduce (comp
-               (map last)
-               (map inc))
-    + (low-points grid)))
+  (transduce
+    (map inc)
+    + (low-points last grid)))
 (defn run-day-9-1 []
   (day-9-1 (inp-num-grid 9)))
 
@@ -398,8 +404,7 @@
   (basin-at-low-point* grid (count (first grid)) (count grid) point))
 
 (defn day-9-2 [grid]
-  (->> (low-points grid)
-      (map first)
+  (->> (low-points first grid)
       (map #(basin-at-low-point grid %))
       (sort-by count)
       (reverse)

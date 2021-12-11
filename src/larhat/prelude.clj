@@ -45,7 +45,9 @@
   (min ma (max mi x)))
 
 (defn num-grid [s]
-  (mapv #(mapv parse-int %) (lines s)))
+  (if (seq? s)
+    (mapv #(mapv parse-int %) s)
+    (mapv #(mapv parse-int %) (lines s))))
 
 (defn inp-num-grid [n]
   (num-grid (input n)))
