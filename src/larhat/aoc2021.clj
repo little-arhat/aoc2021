@@ -344,7 +344,7 @@
 
 (def axis4 #{[-1 0] [1 0] [0 1] [0 -1]})
 (def axis8 #{[-1 0] [1 0] [0 1] [0 -1]
-             [-1 -1 [-1 1] [1 -1] [1 1]]})
+             [-1 -1] [-1 1] [1 -1] [1 1]})
 (defn neighbours [indices point]
   (mapv #(mapv + point %) indices))
 (def neighbours4 (partial neighbours axis4))
@@ -482,23 +482,68 @@
 (defn run-day-10-2 []
   (day-10-2 (inp-lines 10)))
 
+(defn ready-to-flash? [_p el]
+  (and (not (nil? el)) (< 9 el)))
 
-;; (defn octopi-step [octopi]
-;;   (let [octopi' (map-grid inc octopi)
-;;         flashed (grid-select (fn [[x y] el] (< 9 el)) first octopi')]
-;;     (loop [fl flashed
-;;            c (count flashed)]
-;;       (if (empty? flashed)
-;;         octopi'
-;;         (let [adjacent-to-flashed (into #{}(mapcat neighbours8 flashed))
-;;               octopi'' (map-grid )
-;;               ]
-;;           )
-;;         )
-;;       )
-;;     (if (empty? flashed)
-;;       octopi'
-;;       octopi')))
+(defn counting-octopi-step [{:keys [total-flashed
+                                    step
+                                    octopi]}]
+  (let [octopi' (octopi-step octopi)
+        c (atom 0)
+        octopi'' (map-grid
+                   (fn [el]
+                     (if (nil? el)
+                       (do
+                         (swap! c inc)
+                         0)
+                       el))
+                   octopi')]
+    {:total-flashed (+ total-flashed @c)
+     :step (inc step)
+     :out-flashed-this-time @c
+     :octopi octopi''}))
+
+(defn octopi-step [pre-octopi]
+  (let [octopi+ (map-grid inc pre-octopi)]
+    (loop [octopi octopi+]
+      (let [ready-to-flash (set (grid-select ready-to-flash? first octopi))
+            nbs (mapcat neighbours8 ready-to-flash)
+            to-inc (frequencies nbs)]
+        (if (empty? ready-to-flash)
+          octopi
+                                        ; else
+          (recur
+            (map-grid-indexed
+              (fn [p el]
+                (cond
+                  (nil? el)          el
+                  (ready-to-flash p) nil
+                  (to-inc p)         (+ el (to-inc p))
+                  :else              el
+                  ))
+              octopi))))))))
+
+(defn day-11-1 [grid]
+  (->> {:total-flashed 0 :step 0 :octopi grid}
+    (iterate counting-octopi-step)
+    (take 101)
+    last
+    first))
+(defn run-day-11-1 []
+  (day-11-1 (inp-num-grid 11)))
+
+(defn all-flashed? [{:keys [out-flashed-this-time octopi]}]
+  (= out-flashed-this-time (reduce + (map count octopi))))
+
+(defn day-11-2 [grid]
+  (->> {:total-flashed 0 :step 0 :octopi grid}
+    (iterate counting-octopi-step)
+    (take-while (complement all-flashed?))
+    last
+    :step
+    inc))
+(defn run-day-11-2 []
+  (day-11-2 (inp-num-grid 11)))
 
 (defn -main
   "I don't do a whole lot ... yet."

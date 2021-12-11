@@ -72,3 +72,18 @@
                          (mp [[x y] el])))
                      row)))
       grid)))
+
+; https://github.com/cloojure/tupelo/blob/c37b8aeb382697127b825a9f75a3e9c8e99290ed/src/cljc/tupelo/core.cljc#L667
+(defmacro forv
+  "Like clojure.core/for but returns results in a vector.
+  Wraps the loop body in a `do` as with `doseq`. Not lazy."
+  [& forms]
+  (let [bindings-vec (first forms)
+        body-forms   (rest forms)]
+    `(vec (for ~bindings-vec
+            (do ~@body-forms)))))
+
+(defn map-grid-indexed [f grid]
+  (forv [y (range (count grid))]
+    (forv [x (range (count (first grid)))]
+      (f [x y] (grid-get grid [x y])))))
