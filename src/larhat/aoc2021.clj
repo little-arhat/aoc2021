@@ -289,14 +289,15 @@
   (apply str (sort s)))
 
 (defn day-8-1 [data]
-  (as-> (str/replace data " |\n" " | ") codes
-    (lines codes)
-    (map #(str/split % #" \| ") codes)
-    (map last codes)
-    (map words codes)
-    (map #(filter is-1478 %) codes)
-    (map count codes)
-    (reduce + codes)))
+  (let [c1 (str/replace data " |\n" " | ")
+        codes (lines c1)
+        xf (comp
+             (map #(str/split % #" \| "))
+             (map last)
+             (map words)
+             (map #(filter is-1478 %))
+             (map count))]
+    (transduce xf + codes)))
 (defn run-day-8-1 []
   (day-8-1 (input 8)))
 
@@ -332,12 +333,12 @@
     (parse-int sres)))
 
 (defn day-8-2 [data]
-  (as-> (str/replace data " |\n" " | ") codes
-    (lines codes)
-    (map #(str/split % #" \| ") codes)
-    (map #(map words %) codes)
-    (map decypher codes)
-    (reduce + codes)))
+  (let [codes (lines (str/replace data " |\n" " | "))
+        xf (comp
+             (map #(str/split % #" \| "))
+             (map #(map words %))
+             (map decypher))]
+    (transduce xf + codes)))
 (defn run-day-8-2 []
   (day-8-2 (input 8)))
 
@@ -371,11 +372,12 @@
       grid)))
 
 (defn day-9-1 [data]
-  (as-> (mapv #(mapv parse-int %) data) xx
-    (low-points xx)
-    (map last xx)
-    (map inc xx)
-    (reduce + xx)))
+  (let [grid (mapv #(mapv parse-int %) data)
+        lp (low-points grid)]
+    (transduce (comp
+                 (map last)
+                 (map inc))
+      + lp)))
 (defn run-day-9-1 []
   (day-9-1 (inp-lines 9)))
 
