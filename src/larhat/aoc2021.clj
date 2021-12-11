@@ -482,6 +482,24 @@
 (defn run-day-10-2 []
   (day-10-2 (inp-lines 10)))
 
+
+;; (defn octopi-step [octopi]
+;;   (let [octopi' (map-grid inc octopi)
+;;         flashed (grid-select (fn [[x y] el] (< 9 el)) first octopi')]
+;;     (loop [fl flashed
+;;            c (count flashed)]
+;;       (if (empty? flashed)
+;;         octopi'
+;;         (let [adjacent-to-flashed (into #{}(mapcat neighbours8 flashed))
+;;               octopi'' (map-grid )
+;;               ]
+;;           )
+;;         )
+;;       )
+;;     (if (empty? flashed)
+;;       octopi'
+;;       octopi')))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
