@@ -545,6 +545,69 @@
 (defn run-day-11-2 []
   (day-11-2 (inp-num-grid 11)))
 
+(defn cave-system [cave-defs]
+  (->> cave-defs
+    (map #(str/split % #"-"))
+    (map #(map keyword %))
+    (reduce
+      (fn [acc [from to]]
+        (-> acc
+          (update from (fnil conj #{}) to)
+          (update to (fnil conj #{}) from)))
+      {})))
+
+(defn big-cave? [cave]
+  (not= (str cave) (str/lower-case cave)))
+
+(defn cave-paths [rem-fn cs]
+  (loop [to-scan [[:start (list ) {:start 0}]]
+         paths #{}]
+    (let [[current from seen-small-on-the-way] (first to-scan)
+          to-scan' (rest to-scan)
+          nbs (current cs)
+          seen (if (big-cave? current)
+                 seen-small-on-the-way
+                 (update seen-small-on-the-way current (fnil inc 0)))
+          nbs' (if (= current :end)
+                 (list)
+                 (remove (rem-fn seen) nbs))
+          from' (cons current from)
+          nbs'' (zip nbs' (repeat from') (repeat seen))
+          unseen (concat nbs'' to-scan')
+          paths' (if (= current :end)
+                   (conj paths from')
+                   paths)]
+      (if (empty? unseen)
+        (map reverse paths')
+                                        ; else
+        (recur
+          unseen
+          paths')))))
+
+(defn day-12-1 [data]
+  (->> data
+    cave-system
+    (cave-paths identity)
+    count))
+(defn run-day-12-1 []
+  (day-12-1 (inp-lines 12)))
+
+(defn allow-at-most-2-rem-fn [seen-this-path]
+  (let [seen-twice? (some #(<= 2 (last %)) seen-this-path)]
+    (fn [cave]
+      (cond
+        (= :start cave) true
+        (nil? (seen-this-path cave)) false
+        :else seen-twice?))))
+
+(defn day-12-2 [data]
+  (->> data
+    cave-system
+    (cave-paths allow-at-most-2-rem-fn)
+    count))
+(defn run-day-12-2 []
+  (day-12-2 (inp-lines 12)))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
