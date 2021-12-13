@@ -485,24 +485,6 @@
 (defn ready-to-flash? [_p el]
   (and (not (nil? el)) (< 9 el)))
 
-(defn counting-octopi-step [{:keys [total-flashed
-                                    step
-                                    octopi]}]
-  (let [octopi' (octopi-step octopi)
-        c (atom 0)
-        octopi'' (map-grid
-                   (fn [el]
-                     (if (nil? el)
-                       (do
-                         (swap! c inc)
-                         0)
-                       el))
-                   octopi')]
-    {:total-flashed (+ total-flashed @c)
-     :step (inc step)
-     :out-flashed-this-time @c
-     :octopi octopi''}))
-
 (defn octopi-step [pre-octopi]
   (let [octopi+ (map-grid inc pre-octopi)]
     (loop [octopi octopi+]
@@ -521,14 +503,32 @@
                   (to-inc p)         (+ el (to-inc p))
                   :else              el
                   ))
-              octopi))))))))
+              octopi)))))))
+
+(defn counting-octopi-step [{:keys [total-flashed
+                                    step
+                                    octopi]}]
+  (let [octopi' (octopi-step octopi)
+        c (atom 0)
+        octopi'' (map-grid
+                   (fn [el]
+                     (if (nil? el)
+                       (do
+                         (swap! c inc)
+                         0)
+                       el))
+                   octopi')]
+    {:total-flashed (+ total-flashed @c)
+     :step (inc step)
+     :out-flashed-this-time @c
+     :octopi octopi''}))
 
 (defn day-11-1 [grid]
   (->> {:total-flashed 0 :step 0 :octopi grid}
     (iterate counting-octopi-step)
     (take 101)
     last
-    first))
+    :total-flashed))
 (defn run-day-11-1 []
   (day-11-1 (inp-num-grid 11)))
 
