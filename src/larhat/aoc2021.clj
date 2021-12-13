@@ -608,6 +608,71 @@
 (defn run-day-12-2 []
   (day-12-2 (inp-lines 12)))
 
+(defn parse-fold [f]
+  (let [pf (fn [[c i]] [(keyword c) (parse-int i)])]
+    (-> f
+      (str/replace "fold along " "")
+      (str/split #"=")
+      pf)))
+
+(def axis-m {:x 0 :y 1})
+(defn fold-one [coords [axis fold-point]]
+  (update
+    coords
+    (axis axis-m)
+    #(- (* 2 fold-point) %)))
+
+(defn fold-sheet [sheet [axis fold-point]]
+  (let [k (axis axis-m)
+        rf #(= fold-point (get % k))
+        pbf #(< fold-point (get % k))
+        sf #(get % k)
+        sh' (sort-by sf sheet)
+        xf (comp
+             (remove rf)
+             (partition-by pbf))
+        [stays folding] (sequence xf sh')
+        folding' (map #(fold-one % [axis fold-point]) folding)]
+    (set (concat stays folding'))))
+
+(defn parse-coord [c]
+  (->> c
+    comma-sequence
+    (mapv parse-int)))
+
+(defn parse-paper [ls]
+  (let [xf (comp
+             (remove str/blank?)
+             (partition-by #(str/includes? % "fold")))
+        [coords folds] (sequence xf ls)]
+    [(set (map parse-coord coords))
+     (map parse-fold folds)]))
+
+(defn day-13-1 [data]
+  (let [[sheet folds] (parse-paper data)
+        sheet' (fold-sheet sheet (first folds))]
+    (count sheet')))
+(defn run-day-13-1 []
+  (day-13-1 (inp-lines 13)))
+
+(defn paper-sheet [pp]
+  (let [w (inc (apply max (map first pp)))
+        h (inc (apply max (map last pp)))]
+    (apply str
+      (forv [y (range h)]
+        (str
+          (apply str (forv [x (range w)]
+                       (if (pp [x y])
+                         "#"
+                         ".")))
+          "\n")))))
+
+(defn day-13-2 [data]
+  (let [[sheet folds] (parse-paper data)]
+    (paper-sheet (reduce fold-sheet sheet folds))))
+(defn run-day-13-2 []
+  (day-13-2 (inp-lines 13)))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
