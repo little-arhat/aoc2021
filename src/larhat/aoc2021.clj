@@ -664,7 +664,7 @@
           (apply str (forv [x (range w)]
                        (if (pp [x y])
                          "#"
-                         ".")))
+                         " ")))
           "\n")))))
 
 (defn day-13-2 [data]
