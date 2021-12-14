@@ -673,6 +673,55 @@
 (defn run-day-13-2 []
   (day-13-2 (inp-lines 13)))
 
+(defn parse-insertions [ris]
+  (into {} (map #(str/split % #" -> ")  ris)))
+
+(defn pairs [s]
+  (map #(apply str %) (zip s (rest s))))
+
+(defn pair-insert [insertions [pair count]]
+  (let [replacement (insertions pair)
+        [fl ll] pair]
+    {(str fl replacement) count
+     (str replacement ll) count}))
+
+(defn mk-polymer-fn [insertions]
+  (fn [fs]
+    (apply merge-with +
+      (map #(pair-insert insertions %) fs))))
+
+(defn parse-polymers [data]
+  (let [[[formula] _ raw-dict] (partition-by str/blank? data)
+        dict (parse-insertions raw-dict)]
+    [formula dict]))
+
+(defn poly-score [freqs]
+  (let [[_ mic] (apply min-key val freqs)
+        [_ mac] (apply max-key val freqs)]
+    (- mac mic)))
+
+(defn poly-inc-last-char [ll freqs]
+  (update freqs ll (fnil inc 0)))
+
+(defn day-14-1 [data steps]
+  (let [[formula insertions] (parse-polymers data)
+        f (mk-polymer-fn insertions)
+        ll (last formula)]
+    (->> (frequencies (pairs formula))
+      (iterate f)
+      (drop steps)
+      first
+      (map (fn [[[fl _] c]] {fl c}))
+      (apply merge-with +)
+      (poly-inc-last-char ll)
+      poly-score)))
+
+(defn run-day-14-1 []
+  (day-14-1 (inp-lines 14) 10))
+
+(defn run-day-14-2 []
+  (day-14-1 (inp-lines 14) 40))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
