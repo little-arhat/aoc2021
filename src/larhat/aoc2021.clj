@@ -352,13 +352,16 @@
 
 (defn adjacent4 [grid point]
   (->> (neighbours4 point)
-    (map (grid-get grid))
-    (remove nil?)))
+    (map #(vector % (grid-get grid %)))
+    (remove #(nil? (last %)))))
 
 (defn low-points [mp grid]
   (grid-select
     (fn [point el]
-      (< el (apply min (adjacent4 grid point))))
+      (->> (adjacent4 grid point)
+        (map last)
+        (apply min)
+        (< el)))
     mp
     grid))
 
@@ -721,6 +724,124 @@
 
 (defn run-day-14-2 []
   (day-14-1 (inp-lines 14) 40))
+
+(defn indices [grid]
+  (apply concat
+    (for [y (range (count grid))]
+      (for [x (range (count (first grid)))]
+        [x y]))))
+
+(defn cave-graph [grid]
+  (reduce
+    (fn [adj-map [x y]]
+      (let [nbs (adjacent4 grid [x y])
+            src-risk (grid-get grid [x y])]
+        (reduce
+          (fn [am' [[nx ny] n-risk :as nb]]
+            (-> am'
+              (update [x y] (fnil conj #{}) nb)
+              (update [nx ny] (fnil conj #{}) [[x y] src-risk])))
+          adj-map
+          nbs)))
+    {}
+    (indices grid)))
+
+;; https://stackoverflow.com/questions/671706/how-do-i-make-a-java-class-immutable-in-clojure
+(defn make-pqueue [init init-prio]
+  (sorted-set [init-prio init]))
+
+(defn pqueue-add [pq x prio]
+  (conj pq [prio x]))
+
+(defn pqueue-peek [pq]
+  (first pq))
+
+(defn pqueue-pop [pq]
+  (let [top (first pq)]
+    (disj pq top)))
+
+(defn reduce-fn-d [{:keys [to-visit
+                           distances
+                           backtracking
+                           visited
+                           current-risk
+                           current-node] :as state}
+                   [n-node n-risk]]
+  (let [alt (+ current-risk n-risk)
+        to-n-node (get distances n-node ##Inf)]
+    (if (< alt to-n-node)
+      {:to-visit (if (visited n-node)
+                   to-visit
+                   (pqueue-add to-visit n-node alt))
+       :distances (assoc distances n-node alt)
+       :backtracking (assoc backtracking n-node current-node)
+       :visited visited
+       :current-risk current-risk
+       :current-node current-node}
+                                        ; else
+      state)))
+
+(defn dijkstra [adj-map source]
+  (loop [to-visit (make-pqueue source 0)
+         visited #{}
+         distances {source 0}
+         backtracking {}]
+    (if (empty? to-visit)
+      [distances backtracking]
+      (let [[current-risk node] (pqueue-peek to-visit)
+            to-visit' (pqueue-pop to-visit)
+            visited' (conj visited node)
+            adjacent (get adj-map node #{})
+            rr (reduce reduce-fn-d
+                 {:to-visit to-visit'
+                  :distances distances
+                  :backtracking backtracking
+                  :visited visited'
+                  :current-risk current-risk
+                  :current-node node}
+                 adjacent)]
+        (recur (rr :to-visit)
+          visited'
+          (rr :distances)
+          (rr :backtracking))))))
+
+(defn day-15-1 [grid]
+  (-> (cave-graph grid)
+    (dijkstra [0 0])
+    first
+    (get [(dec (count (first grid)))
+          (dec (count grid))])))
+(defn run-day-15-1 []
+  (day-15-1 (inp-num-grid 15)))
+
+(defn inc9 [n]
+  (if (< n 9) (inc n) 1))
+(defn ninc9 [t] #(nth (iterate inc9 %) t))
+(defn enlarge [thing times mk-f]
+  (apply concat
+    thing
+    (for [i (range 1 times)]
+      (let [inc-f (ninc9 i)
+            ff (mk-f inc-f)]
+        (mapv ff thing)))))
+(defn enlarge-vertically [grid times]
+  (enlarge grid times (fn [inc-f] #(mapv inc-f %))))
+(defn enlarge-horizontally [grid times]
+  (mapv (fn [row]
+          (vec (enlarge row times identity)))
+    grid))
+
+(defn day-15-2 [grid]
+  (-> grid
+    (enlarge-vertically 5)
+    (enlarge-horizontally 5)
+    cave-graph
+    (dijkstra [0 0])
+    first
+    (get [(dec (* 5 (count (first grid))))
+          (dec (* 5 (count grid)))])))
+(defn run-day-15-2 []
+  (day-15-2 (inp-num-grid 15)))
 
 (defn -main
   "I don't do a whole lot ... yet."
