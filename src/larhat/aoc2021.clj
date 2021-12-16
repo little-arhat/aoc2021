@@ -836,6 +836,128 @@
 (defn run-day-15-2 []
   (day-15-2 (inp-num-grid 15)))
 
+(defn hex-bits [n]
+  (nth ["0000"
+        "0001"
+        "0010"
+        "0011"
+        "0100"
+        "0101"
+        "0110"
+        "0111"
+        "1000"
+        "1001"
+        "1010"
+        "1011"
+        "1100"
+        "1101"
+        "1110"
+        "1111"
+        ] (Integer/parseInt (str n) 16)))
+
+(defn hex-bits-s [ns]
+  (apply str (map hex-bits ns)))
+
+(defn ss [s offset length]
+  (subs s offset (+ offset length)))
+
+(declare parse-bits-packet)
+
+(defn parse-bits-number [bits]
+  (loop [collected []
+         rest bits]
+    (let [group (ss rest 0 5)
+          fst (first group)
+          r (subs group 1)
+          collected' (conj collected r)
+          rest' (subs rest 5)]
+      (if (= \0 fst)
+        [rest'
+         [(parse-bin-int (apply str collected'))]]
+        (recur collected' rest')))))
+
+(defn parse-bits-op-number [bits]
+  (let [bi-number (ss bits 0 11)
+        number (parse-bin-int bi-number)]
+    (reduce (fn [[to-parse parsed] i]
+              (let [[r' pp] (parse-bits-packet to-parse)]
+                [r' (conj parsed pp)]))
+      [(subs bits 11) []]
+      (range number))))
+
+(defn parse-bits-op-length [bits]
+  (let [bi-length (ss bits 0 15)
+        length (parse-bin-int bi-length)
+        rest-after-packet (subs bits (+ 15 length))]
+    (loop [to-parse (ss bits 15 length)
+           packets []]
+      (let [[r' pp] (parse-bits-packet to-parse)
+            p' (conj packets pp)]
+        (if (str/blank? r')
+          [rest-after-packet p']
+          (recur r' p'))))))
+
+(defn parse-bits-op [bits]
+  (let [length-type-id (first bits)]
+    (if (= \0 length-type-id)
+      (parse-bits-op-length (subs bits 1))
+      (parse-bits-op-number (subs bits 1)))))
+
+(defn type-ids-parsers [ik]
+  (if (= 4 ik)
+    parse-bits-number
+    parse-bits-op))
+
+(def type-ids-ops
+  [+
+   *
+   min
+   max
+   identity
+   #(if (< %2 %1) 1 0)
+   #(if (< %1 %2) 1 0)
+   #(if (= %1 %2) 1 0)])
+
+(defn parse-bits-packet [bits]
+  (let [bi-version (ss bits 0 3)
+        bi-type-id (ss bits 3 3)
+        version (parse-bin-int bi-version)
+        type-id (parse-bin-int bi-type-id)
+        p-fn (type-ids-parsers type-id)
+        to-parse (subs bits 6)
+        [rest payload] (p-fn to-parse)]
+    [rest {:version version
+           :type-id (get type-ids-ops type-id)
+           :payload payload}]))
+
+(defn find-versions [tt]
+  (->> tt
+    (tree-seq map? :payload)
+    (map :version)
+    (remove nil?)))
+
+(defn day-16-1 [data]
+  (->> (hex-bits-s data)
+    parse-bits-packet
+    last
+    find-versions
+    (reduce +)))
+(defn run-day-16-1 []
+  (day-16-1 (str/trim (input 16))))
+
+(defn bits-eval [node]
+  (if-let [f (:type-id node)]
+    (apply f (:payload node))
+    node))
+
+(defn day-16-2 [data]
+  (->> (hex-bits-s data)
+    parse-bits-packet
+    last
+    (clojure.walk/postwalk bits-eval)))
+(defn run-day-16-2 []
+  (day-16-2 (str/trim (input 16))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
