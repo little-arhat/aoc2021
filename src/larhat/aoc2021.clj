@@ -762,7 +762,6 @@
 
 (defn reduce-fn-d [{:keys [to-visit
                            distances
-                           backtracking
                            visited
                            current-risk
                            current-node] :as state}
@@ -774,7 +773,6 @@
                    to-visit
                    (pqueue-add to-visit n-node alt))
        :distances (assoc distances n-node alt)
-       :backtracking (assoc backtracking n-node current-node)
        :visited visited
        :current-risk current-risk
        :current-node current-node}
@@ -784,10 +782,9 @@
 (defn dijkstra [adj-map source]
   (loop [to-visit (make-pqueue source 0)
          visited #{}
-         distances {source 0}
-         backtracking {}]
+         distances {source 0}]
     (if (empty? to-visit)
-      [distances backtracking]
+      distances
       (let [[current-risk node] (pqueue-peek to-visit)
             to-visit' (pqueue-pop to-visit)
             visited' (conj visited node)
@@ -795,20 +792,17 @@
             rr (reduce reduce-fn-d
                  {:to-visit to-visit'
                   :distances distances
-                  :backtracking backtracking
                   :visited visited'
                   :current-risk current-risk
                   :current-node node}
                  adjacent)]
         (recur (rr :to-visit)
           visited'
-          (rr :distances)
-          (rr :backtracking))))))
+          (rr :distances))))))
 
 (defn day-15-1 [grid]
   (-> (cave-graph grid)
     (dijkstra [0 0])
-    first
     (get [(dec (count (first grid)))
           (dec (count grid))])))
 (defn run-day-15-1 []
@@ -837,7 +831,6 @@
     (enlarge-horizontally 5)
     cave-graph
     (dijkstra [0 0])
-    first
     (get [(dec (* 5 (count (first grid))))
           (dec (* 5 (count grid)))])))
 (defn run-day-15-2 []
