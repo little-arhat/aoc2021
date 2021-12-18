@@ -958,6 +958,71 @@
 (defn run-day-16-2 []
   (day-16-2 (str/trim (input 16))))
 
+(defn probe-fn [xvel yvel]
+  (fn [step]
+    (let [gravity (reduce + (range step))
+          max-x-step (min step xvel)
+          drag (reduce + (range max-x-step))]
+      [(- (* max-x-step xvel) drag)
+       (- (* step yvel) gravity)])))
+
+(defn parse-probe-area [d]
+  (let [parts (str/split (str/trim d) #"[. ,=]")
+        gin #(parse-int (nth parts %))]
+    {:xmin (gin 3)
+     :xmax (gin 5)
+     :ymin (gin 8)
+     :ymax (gin 10)}))
+
+(defn find-yvel [ymin]
+  (dec (- ymin)))
+
+(defn find-best-elevation [yvel]
+  (reduce + (range yvel 0 -1)))
+
+(defn day-17-1 [data]
+  (-> data
+    parse-probe-area
+    :ymin
+    find-yvel
+    find-best-elevation))
+(defn run-day-17-1 []
+  (day-17-1 (str/trim (input 17))))
+
+(defn before-or-in-area [{:keys [xmax ymin]} [x y]]
+  (and
+    (<= x xmax)
+    (<= ymin y)))
+
+(defn within-area [{:keys [xmax xmin ymax ymin]} [x y]]
+  (and
+    (<= xmin x xmax)
+    (<= ymin y ymax)))
+
+(defn generate-velocities [{:keys [xmax ymin]}]
+  (for [xvel (range 0 (inc xmax))
+        yvel (range ymin (inc (find-yvel ymin)))]
+    [xvel yvel]))
+
+(defn probe-trajectory-inf [[xvel yvel]]
+  (map (probe-fn xvel yvel) (range)))
+
+(defn probe-trajectory [target-area vels]
+  (take-while
+    (partial before-or-in-area target-area)
+    (probe-trajectory-inf vels)))
+
+(defn day-17-2 [data]
+  (let [area (parse-probe-area data)]
+    (->> area
+      generate-velocities
+      (map (partial probe-trajectory area))
+      (keep #(some (partial within-area area) %))
+      count)))
+
+(defn run-day-17-2 []
+  (day-17-2 (str/trim (input 17))))
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
