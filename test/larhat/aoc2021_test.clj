@@ -75,3 +75,12 @@
 (t day17
   (is (= 35511 (run-day-17-1)))
   (is (= 3282 (run-day-17-2))))
+
+(t day18
+  (is (= 3987 (run-day-18-1)))
+  (is (= 4500 (run-day-18-2))))
+
+;; slow
+(t day19
+  (is (= 367 (run-day-19-1)))
+  (is (= 11925 (run-day-19-2))))

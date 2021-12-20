@@ -87,3 +87,11 @@
   (forv [y (range (count grid))]
     (forv [x (range (count (first grid)))]
       (f [x y] (grid-get grid [x y])))))
+
+(defn concat* [xs]
+  (apply concat xs))
+
+(defn comma-ints [s]
+  (as-> (str/trim s) x
+    (str/split x #"\,")
+    (mapv parse-int x)))

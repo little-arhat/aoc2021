@@ -126,7 +126,7 @@
 
 (defn run-day-4-helper [f i]
   (f
-    (->> i first comma-sequence (map parse-int))
+    (->> i first comma-ints)
     (->> i rest  (map to-board))))
 (defn run-day-4-1 []
   (run-day-4-helper day-4-1 (inp-phrases 4)))
@@ -241,7 +241,7 @@
     fish))
 
 (defn day-6-1 [days-of-life data]
-  (->> (map parse-int data)
+  (->> (comma-ints data)
     frequencies
     (iterate one-day-of-fish)
     (take (inc days-of-life))
@@ -249,9 +249,9 @@
     vals
     (reduce +)))
 (defn run-day-6-1 []
-  (day-6-1 80 (comma-sequence (input 6))))
+  (day-6-1 80 (input 6)))
 (defn run-day-6-2 []
-  (day-6-1 256 (comma-sequence (input 6))))
+  (day-6-1 256 (input 6)))
 
 ;; rosetta
 (defn median [ns]
@@ -263,22 +263,22 @@
       (/ (+ (nth ns mid) (nth ns (dec mid))) 2))))
 
 (defn day-7-1 [data]
-  (let [poss (map parse-int data)
+  (let [poss (comma-ints data)
         md (median poss)
         costs (map #(Math/abs (- % md)) poss)]
     (reduce + costs)))
 (defn run-day-7-1 []
-  (day-7-1 (comma-sequence (input 7))))
+  (day-7-1  (input 7)))
 
 (defn day-7-2 [data]
-  (let [poss (map parse-int data)
+  (let [poss (comma-ints data)
         sm (reduce + poss)
         cnt (count poss)
         avg (-> (/ sm cnt) int)
         costs (map #(->> (- % avg) Math/abs inc range (reduce +)) poss)]
     (reduce + costs)))
 (defn run-day-7-2 []
-  (day-7-2 (comma-sequence (input 7))))
+  (day-7-2 (input 7)))
 
 (def l-1478 #{2 3 4 7})
 (defn is-1478 [wd]
@@ -486,7 +486,7 @@
   (day-10-2 (inp-lines 10)))
 
 (defn ready-to-flash? [_p el]
-  (and (not (nil? el)) (< 9 el)))
+  (and el (< 9 el)))
 
 (defn octopi-step [pre-octopi]
   (let [octopi+ (map-grid inc pre-octopi)]
@@ -638,17 +638,12 @@
         folding' (map #(fold-one % [axis fold-point]) folding)]
     (set (concat stays folding'))))
 
-(defn parse-coord [c]
-  (->> c
-    comma-sequence
-    (mapv parse-int)))
-
 (defn parse-paper [ls]
   (let [xf (comp
              (remove str/blank?)
              (partition-by #(str/includes? % "fold")))
         [coords folds] (sequence xf ls)]
-    [(set (map parse-coord coords))
+    [(set (map comma-ints coords))
      (map parse-fold folds)]))
 
 (defn day-13-1 [data]
@@ -679,8 +674,11 @@
 (defn parse-insertions [ris]
   (into {} (map #(str/split % #" -> ")  ris)))
 
-(defn pairs [s]
+(defn f-pairs [s]
   (map #(apply str %) (zip s (rest s))))
+
+(defn pairs [s]
+  (zip s (rest s)))
 
 (defn pair-insert [insertions [pair count]]
   (let [replacement (insertions pair)
@@ -710,7 +708,7 @@
   (let [[formula insertions] (parse-polymers data)
         f (mk-polymer-fn insertions)
         ll (last formula)]
-    (->> (frequencies (pairs formula))
+    (->> (frequencies (f-pairs formula))
       (iterate f)
       (drop steps)
       first
@@ -726,7 +724,7 @@
   (day-14-1 (inp-lines 14) 40))
 
 (defn indices [grid]
-  (apply concat
+  (concat*
     (for [y (range (count grid))]
       (for [x (range (count (first grid)))]
         [x y]))))
@@ -1022,6 +1020,246 @@
 
 (defn run-day-17-2 []
   (day-17-2 (str/trim (input 17))))
+
+(defn update-last [v f]
+  (update v (dec (count v)) f))
+
+(defn snail>-< [to-scan collected current next next-next]
+  (cond-> {:to-scan to-scan :collected collected}
+    (not-empty collected) ;; has numbers on the left
+    (update :collected  #(update-last %
+                           (fn [{:keys [n d]}]
+                             {:n (+ n (:n current))
+                              :d d})))
+    true                    ;; always add 0 in place of pair
+    (update :collected #(conj % {:n 0 :d (-> current :d dec)}))
+    true                    ;; drop this and right number from the pair
+    (update :to-scan #(drop 2 %))
+    (some? next-next)        ;; if smth is on the right of the pair
+    (->
+      (update :collected #(conj % {:n (+ (:n next) (:n next-next))
+                                   :d (:d next-next)}))
+      (update :to-scan rest) ;; also update to-scan by dropping nn
+      )))
+
+(defn snail<-> [{:keys [n d]}]
+  [{:n (-> n (/ 2) Math/floor int) :d (inc d)}
+   {:n (-> n (/ 2) Math/ceil int) :d (inc d)}])
+
+(defn snail-reduction-step [a]
+  (let [[normal1 too-deep] (split-with #(>= 4 (:d %)) a)
+        [normal2 too-big] (split-with #(> 10 (:n %)) a)]
+    (cond
+      (not-empty too-deep) ;; needs explode
+      (let [{:keys [to-scan collected]}
+            (snail>-< too-deep
+              (vec normal1)
+              (first too-deep)
+              (second too-deep)
+              (nth too-deep 2 nil))]
+        (into collected to-scan))
+      (not-empty too-big) ;; needs split
+      (into (vec normal2) (concat (snail<-> (first too-big)) (rest too-big)))
+      :else ;; good
+      a)))
+
+(defn snail-reduce [a]
+  (reduce #(if (= %1 %2) (reduced %1) %2)
+    (iterate snail-reduction-step a)))
+
+(defn tree-seq-depth [branch? children root]
+  (let [walk (fn walk [depth node]
+               (lazy-seq
+                 (cons {:n node :d depth}
+                   (when (branch? node)
+                     (mapcat (partial walk (inc depth)) (children node))))))]
+    (walk 0 root)))
+
+(defn snail-parse [sn]
+  (->> sn
+    read-string
+    (tree-seq-depth sequential? seq)
+    (filter (comp int? :n))))
+
+(defn snail+ [a b]
+  (concat
+    (map #(update % :d inc) a)
+    (map #(update % :d inc) b)))
+(defn snail+red [a b]
+  (snail-reduce (snail+ a b)))
+(defn snail++ [& xs]
+  (reduce snail+red xs))
+(defn psnail++ [& xs]
+  (reduce snail+red (map snail-parse xs)))
+
+(defn mag-calc [[a b]]
+  (if (nil? b)
+    a
+    {:n (+ (* (:n a) 3) (* (:n b) 2))
+     :d (dec (:d a))}))
+
+(defn mag-one-depth [m ad]
+  (let [gd (:d (first ad))
+        ps (partition 2 2 nil ad)]
+    (if (= m gd)
+      (mapv mag-calc ps)
+      ad)))
+
+(defn magnitude-step [a]
+  (let [by-depth (partition-by :d a)
+        m (:d (apply max-key :d a))]
+    (mapcat (partial mag-one-depth m) by-depth)))
+
+(defn magnitude [a]
+  (loop [r a]
+    (if (= 1 (count r))
+      (:n (first r))
+      (recur (magnitude-step r)))))
+
+(defn day-18-1 [data]
+  (->> data
+    (map snail-parse)
+    (apply snail++)
+    magnitude))
+(defn run-day-18-1 []
+  (day-18-1 (inp-lines 18)))
+
+(defn day-18-2 [data]
+  (let [numbers (map snail-parse data)]
+    (reduce max (for [x numbers
+                     y numbers]
+                 (let [xy (magnitude (snail++ x y))
+
+                       yx (magnitude (snail++ y x))]
+                   (max xy yx))))))
+(defn run-day-18-2 []
+  (day-18-2 (inp-lines 18)))
+
+(defn permutations [s]
+  (lazy-seq
+    (if (seq (rest s))
+      (apply concat (for [x s]
+                      (map #(cons x %) (permutations (remove #{x} s)))))
+      [s])))
+
+(defn rotations [[x y z]]
+  [[x y z]
+   [(- y) x z]
+   [(- x) (- y) z]
+   [y (- x) z]])
+(defn z-orientations [[x y z]]
+  [[x y z]
+   [x z (- y)]
+   [x (- y) (- z)]
+   [x (- z) y]
+   [(- z) y x]
+   [z y (- x)]])
+(defn orientations [[x y z]]
+  (->> (z-orientations [x y z])
+    (mapv rotations)
+    (apply concat)
+    vec))
+
+(defn parse-scanners [data]
+  (->> data
+    (remove str/blank?)
+    (partition-by #(str/starts-with? % "---"))
+    (remove #(= 1 (count %)))
+    (mapv #(mapv comma-ints %))))
+
+(defn prepare-scanners [scanners]
+  (map-indexed (fn [idx s]
+                 {:beacons nil
+                  :pos nil
+                  :n idx
+                  :orientations (transpose (map orientations s))})
+    scanners))
+
+(defn scanners-find-overlap** [unknown known]
+  (let [possible-orientations (:orientations unknown)
+        known-beacons (:beacons known)]
+    (for [orientation possible-orientations
+          beacon known-beacons
+          single orientation
+          :let [diff (mapv - beacon single)
+                shifted (set (map #(mapv + % diff) orientation))]]
+      {:overlap (clojure.set/intersection shifted known-beacons)
+       :shifted shifted
+       :pair (:n known)
+       :pos diff})))
+
+(defn scanners-find-overlap* [unknown known]
+  (->>
+    (scanners-find-overlap** unknown known)
+    (drop-while (fn [{:keys [overlap]}]
+                  (< (count overlap) 12)))
+    first))
+;; mostly for part1 vs part2
+(def scanners-find-overlap (memoize scanners-find-overlap*))
+
+(defn pair-scanner* [unknown known-scanners]
+  (reduce (fn [_ known]
+            (when-let [overlap (scanners-find-overlap unknown known)]
+              (reduced overlap)))
+    nil known-scanners))
+
+(defn pair-scanner [unknown known-scanners]
+  (when-let [overlap (pair-scanner* unknown known-scanners)]
+    {:pos          (:pos overlap)
+     :beacons      (:shifted overlap)
+     :n            (:n unknown)
+     :orientations (:orientations unknown)}))
+
+(defn scanners-init [{:keys [orientations n]}]
+  {:beacons (set (first orientations))
+   :pos [0 0 0]
+   :n n
+   :orientations orientations})
+
+(defn pair-all-scanners [scanners]
+  (loop [to-scan (rest scanners)
+         all-known [(-> scanners first scanners-init)]]
+    (if (empty? to-scan)
+      all-known
+      (let [unknown (first to-scan)
+            to-scan' (rest to-scan)
+            maybe-known (pair-scanner unknown all-known)]
+        (if maybe-known
+          (recur to-scan' (conj all-known maybe-known))
+          (recur (concat to-scan' (list unknown)) all-known))))))
+
+(defn day-19-1 [data]
+  (->> data
+    parse-scanners
+    prepare-scanners
+    pair-all-scanners
+    (map :beacons)
+    (reduce clojure.set/union)
+    count))
+(defn run-day-19-1 []
+  (day-19-1 (inp-lines 19)))
+
+(defn scanner-distance [s1 s2]
+  (let [pos1 (:pos s1)
+        pos2 (:pos s2)
+        diffs (mapv - pos1 pos2)
+        abs (mapv #(Math/abs %) diffs)]
+    (reduce + abs)))
+
+(defn scanners-distances [scanners]
+  (for [s1 scanners
+        s2 scanners]
+    (scanner-distance s1 s2)))
+
+(defn day-19-2 [data]
+  (->> data
+    parse-scanners
+    prepare-scanners
+    pair-all-scanners
+    scanners-distances
+    (reduce max)))
+(defn run-day-19-2 []
+  (day-19-2 (inp-lines 19)))
 
 (defn -main
   "I don't do a whole lot ... yet."
